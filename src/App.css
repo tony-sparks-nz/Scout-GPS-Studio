@@ -1,0 +1,704 @@
+/* Scout GPS Test - Factory-grade high-contrast theme */
+
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #12122a;
+  --bg-panel: #1a1a3e;
+  --bg-input: #0e0e28;
+  --border: #2a2a5a;
+  --text-primary: #e0e0ff;
+  --text-secondary: #8888aa;
+  --text-label: #9999bb;
+  --pass: #00ff41;
+  --fail: #ff3333;
+  --warning: #ffaa00;
+  --accent: #00ccff;
+  --btn-primary: #0066cc;
+  --btn-primary-hover: #0088ee;
+  --btn-secondary: #333366;
+  --btn-secondary-hover: #444488;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', 'Ubuntu', 'Roboto', sans-serif;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ============ App Layout ============ */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.header-left h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.version {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.header-right {
+  display: flex;
+  gap: 8px;
+}
+
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.zones {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 12px;
+  min-height: 0;
+}
+
+@media (max-width: 1200px) {
+  .zones {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============ Panels ============ */
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.panel h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel h3 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.panel h4 {
+  font-size: 12px;
+  color: var(--text-label);
+  margin-bottom: 6px;
+}
+
+/* ============ Buttons ============ */
+
+.btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--btn-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn:hover {
+  background: var(--btn-secondary-hover);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--btn-primary);
+  border-color: var(--btn-primary);
+}
+
+.btn-primary:hover {
+  background: var(--btn-primary-hover);
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.btn-active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+.btn-large {
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 700;
+  min-height: 56px;
+  width: 100%;
+  border-radius: 6px;
+}
+
+.btn-start {
+  background: var(--pass);
+  color: #000;
+  border-color: var(--pass);
+}
+
+.btn-start:hover {
+  background: #00cc33;
+}
+
+.btn-abort {
+  background: var(--fail);
+  color: #fff;
+  border-color: var(--fail);
+}
+
+.btn-abort:hover {
+  background: #cc2222;
+}
+
+.btn-secondary {
+  background: var(--btn-secondary);
+}
+
+/* ============ Device Detection ============ */
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.device-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sentence-count {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.device-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.detail-label {
+  color: var(--text-label);
+  font-size: 12px;
+}
+
+.detail-value {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.serial-number {
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.device-detect-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.detecting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.manual-connect {
+  width: 100%;
+}
+
+.manual-connect h4 {
+  margin-bottom: 8px;
+}
+
+.manual-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.manual-row select {
+  flex: 1;
+  min-width: 100px;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* ============ Live Dashboard ============ */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+}
+
+.constellation-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.constellation-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.badge-name {
+  color: var(--text-label);
+}
+
+.badge-count {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.satellite-signals {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.constellation-group {
+  margin-bottom: 8px;
+}
+
+.satellite-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.satellite-row {
+  display: grid;
+  grid-template-columns: 60px 100px 1fr 50px;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.sat-prn {
+  color: var(--text-label);
+  font-family: monospace;
+}
+
+.sat-angles {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.signal-bar-track {
+  height: 10px;
+  background: var(--bg-primary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.signal-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.sat-snr {
+  text-align: right;
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.no-data {
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: 16px;
+}
+
+/* ============ Test Runner ============ */
+
+.test-runner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verdict-banner {
+  padding: 24px;
+  text-align: center;
+  font-size: 48px;
+  font-weight: 900;
+  border-radius: 8px;
+  letter-spacing: 8px;
+}
+
+.verdict-pass {
+  background: rgba(0, 255, 65, 0.15);
+  color: var(--pass);
+  border: 3px solid var(--pass);
+}
+
+.verdict-fail,
+.verdict-timed_out {
+  background: rgba(255, 51, 51, 0.15);
+  color: var(--fail);
+  border: 3px solid var(--fail);
+}
+
+.test-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.done-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.done-actions .btn {
+  flex: 1;
+}
+
+.test-timing {
+  display: flex;
+  gap: 16px;
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--accent);
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+/* ============ Criteria Table ============ */
+
+.criteria-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.criteria-table th {
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--text-label);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.criteria-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(42, 42, 90, 0.5);
+}
+
+.row-pass {
+  background: rgba(0, 255, 65, 0.05);
+}
+
+.row-fail {
+  background: rgba(255, 51, 51, 0.05);
+}
+
+.cell-pass {
+  color: var(--pass);
+  font-weight: 700;
+}
+
+.cell-fail {
+  color: var(--fail);
+  font-weight: 700;
+}
+
+/* ============ NMEA Traffic ============ */
+
+.nmea-traffic {
+  margin-top: 12px;
+}
+
+.nmea-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.nmea-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nmea-content {
+  height: 150px;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+}
+
+.nmea-sentence {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+
+/* ============ Test History ============ */
+
+.test-history {
+  margin-top: 12px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.history-table th {
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--text-label);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+
+.history-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(42, 42, 90, 0.3);
+}
+
+/* ============ Config Panel ============ */
+
+.config-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.config-modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.config-modal h2 {
+  font-size: 16px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.config-grid label {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.config-grid input {
+  padding: 6px 10px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: monospace;
+  text-align: right;
+}
+
+.config-grid input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.config-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ============ Messages ============ */
+
+.error-msg {
+  padding: 8px 12px;
+  background: rgba(255, 51, 51, 0.15);
+  color: var(--fail);
+  border: 1px solid rgba(255, 51, 51, 0.3);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.success-msg {
+  padding: 8px 12px;
+  background: rgba(0, 255, 65, 0.1);
+  color: var(--pass);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  border-radius: 4px;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+/* ============ Scrollbar ============ */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a8a;
+}
