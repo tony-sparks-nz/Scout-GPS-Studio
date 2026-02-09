@@ -154,6 +154,45 @@ export function LiveDashboard({ gpsData, criteria }: LiveDashboardProps) {
           ))
         )}
       </div>
+
+      {/* Constellation summary */}
+      <div className="constellation-summary">
+        <h4>Constellations</h4>
+        {Object.keys(groupedSatellites).length === 0 ? (
+          <p className="no-data">No constellations</p>
+        ) : (
+          <>
+            <div className="constellation-summary-header">
+              <span>System</span>
+              <span>Visible</span>
+              <span>Tracking</span>
+            </div>
+            {Object.entries(groupedSatellites)
+              .sort((a, b) => b[1].length - a[1].length)
+              .map(([constellation, sats]) => {
+                const tracking = sats.filter(s => s.snr !== null && s.snr > 0).length;
+                return (
+                  <div key={constellation} className="constellation-summary-row">
+                    <span className="cs-name">{constellation}</span>
+                    <span className="cs-count">{sats.length}</span>
+                    <span className="cs-tracking">{tracking}</span>
+                  </div>
+                );
+              })}
+            <div className="constellation-summary-total">
+              <span className="cs-name">Total</span>
+              <span className="cs-count">
+                {Object.values(groupedSatellites).reduce((sum, sats) => sum + sats.length, 0)}
+              </span>
+              <span className="cs-tracking">
+                {Object.values(groupedSatellites).reduce(
+                  (sum, sats) => sum + sats.filter(s => s.snr !== null && s.snr > 0).length, 0
+                )}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }

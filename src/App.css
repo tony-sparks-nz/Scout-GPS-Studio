@@ -590,6 +590,80 @@ body {
 }
 
 
+/* ============ Constellation Summary ============ */
+
+.constellation-summary {
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+
+.constellation-summary h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.constellation-summary-header {
+  display: grid;
+  grid-template-columns: 1fr 50px 56px;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+  text-align: right;
+}
+
+.constellation-summary-header span:first-child {
+  text-align: left;
+}
+
+.constellation-summary-row {
+  display: grid;
+  grid-template-columns: 1fr 50px 56px;
+  gap: 4px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.constellation-summary-total {
+  display: grid;
+  grid-template-columns: 1fr 50px 56px;
+  gap: 4px;
+  padding: 4px 0 0;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cs-name {
+  color: var(--text-primary);
+}
+
+.cs-count {
+  text-align: right;
+  color: var(--accent);
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+  font-weight: 600;
+}
+
+.cs-tracking {
+  text-align: right;
+  color: #00ff41;
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+  font-weight: 600;
+}
+
 /* ============ NMEA Traffic ============ */
 
 .nmea-traffic {
@@ -830,6 +904,113 @@ body {
   font-family: 'Consolas', 'Ubuntu Mono', monospace;
 }
 
+
+/* ============ Optimize Panel ============ */
+
+.optimize-panel {
+  margin-top: 4px;
+}
+
+.opt-chip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.opt-chip-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.opt-chip-detail {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.opt-progress {
+  margin-bottom: 8px;
+}
+
+.opt-phase-label {
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.opt-profile-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.opt-results {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.opt-metric-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 60px;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.opt-metric-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 60px;
+  gap: 4px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.opt-metric-label {
+  color: var(--text-label);
+  font-size: 11px;
+}
+
+.opt-metric-before,
+.opt-metric-after {
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+  color: var(--text-primary);
+  text-align: right;
+  font-size: 11px;
+}
+
+.opt-metric-change {
+  font-family: 'Consolas', 'Ubuntu Mono', monospace;
+  font-weight: 700;
+  text-align: right;
+  font-size: 11px;
+}
+
+.opt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.opt-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
 
 /* ============ Scrollbar ============ */
 

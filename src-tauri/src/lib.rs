@@ -5,6 +5,8 @@ mod gps;
 mod nmea;
 mod test_criteria;
 mod test_report;
+mod ubx_config;
+mod ubx_optimizer;
 
 use commands::AppState;
 use gps::GpsManager;
@@ -54,6 +56,10 @@ pub fn run() {
             commands::abort_test,
             commands::save_test_report,
             commands::get_recent_results,
+            // GPS optimization
+            commands::start_optimize,
+            commands::get_optimize_status,
+            commands::abort_optimize,
         ])
         .run(tauri::generate_context!())
         .expect("error while running GPS Studio");

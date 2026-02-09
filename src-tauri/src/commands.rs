@@ -1,9 +1,10 @@
 // Tauri command handlers for GPS operations and test engine
 
-use crate::gps::{DetectedPort, GpsManager, GpsSourceStatus};
+use crate::gps::{self, DetectedPort, GpsManager, GpsSourceStatus};
 use crate::nmea::GpsData;
 use crate::test_criteria::{DeviceInfo, TestCriteria, TestResult, TestRunner, TestVerdict};
 use crate::test_report;
+use crate::ubx_optimizer::OptimizeStatus;
 use serde::Serialize;
 use std::sync::RwLock;
 use tauri::State;
@@ -254,4 +255,52 @@ pub fn save_test_report(state: State<'_, AppState>) -> CommandResult<String> {
 pub fn get_recent_results(state: State<'_, AppState>) -> CommandResult<Vec<TestResult>> {
     let recent = state.recent_results.read().unwrap().clone();
     CommandResult::ok(recent)
+}
+
+// ============ GPS Optimization Commands ============
+
+#[tauri::command]
+pub fn start_optimize(state: State<'_, AppState>) -> CommandResult<bool> {
+    // Verify GPS is connected
+    let status = state.gps_manager.get_status();
+    let port_name = match status.port_name {
+        Some(ref name) => name.clone(),
+        None => return CommandResult::err("No GPS connected. Connect a GPS device first."),
+    };
+
+    // Verify it's a u-blox device
+    if !gps::is_ublox_device(&port_name) {
+        return CommandResult::err(
+            "Connected device is not a u-blox receiver. Optimization requires a u-blox GPS chip.",
+        );
+    }
+
+    // Start optimizer — queues MON-VER poll
+    state.gps_manager.optimizer.write().unwrap().start();
+
+    // Send the MON-VER poll command immediately
+    state.gps_manager.send_pending_commands();
+
+    CommandResult::ok(true)
+}
+
+#[tauri::command]
+pub fn get_optimize_status(state: State<'_, AppState>) -> CommandResult<OptimizeStatus> {
+    // Feed current GPS data into optimizer's tick
+    let gps_data = state.gps_manager.get_data();
+    let has_pending = state.gps_manager.optimizer.write().unwrap().tick(&gps_data);
+
+    // Send any queued commands (e.g. optimization profile after baseline)
+    if has_pending {
+        state.gps_manager.send_pending_commands();
+    }
+
+    let status = state.gps_manager.optimizer.read().unwrap().get_status();
+    CommandResult::ok(status)
+}
+
+#[tauri::command]
+pub fn abort_optimize(state: State<'_, AppState>) -> CommandResult<bool> {
+    state.gps_manager.optimizer.write().unwrap().reset();
+    CommandResult::ok(true)
 }

@@ -106,6 +106,60 @@ export interface TestResult {
   best_gps_data: GpsData | null;
 }
 
+// ============ GPS Optimization Types ============
+
+export type OptimizePhase =
+  | 'idle'
+  | 'identifying_chip'
+  | 'collecting_baseline'
+  | 'applying_profile'
+  | 'stabilizing'
+  | 'collecting_result'
+  | 'complete'
+  | 'error';
+
+export type UbloxSeries = 'series7' | 'series8' | 'unknown';
+
+export interface UbloxChipInfo {
+  sw_version: string;
+  hw_version: string;
+  extensions: string[];
+  series: UbloxSeries;
+  chip_name: string;
+}
+
+export interface PerformanceSnapshot {
+  avg_hdop: number;
+  avg_satellites: number;
+  avg_snr: number;
+  constellation_count: number;
+  constellations: string[];
+  avg_fix_quality: number;
+  sample_count: number;
+}
+
+export interface OptimizationReport {
+  chip_info: UbloxChipInfo;
+  profile_applied: string;
+  before: PerformanceSnapshot;
+  after: PerformanceSnapshot;
+  hdop_improvement_pct: number;
+  satellite_improvement_pct: number;
+  snr_improvement_pct: number;
+  constellation_improvement: number;
+  timestamp: string;
+}
+
+export interface OptimizeStatus {
+  phase: OptimizePhase;
+  chip_info: UbloxChipInfo | null;
+  progress_seconds: number;
+  phase_duration_seconds: number;
+  error: string | null;
+  report: OptimizationReport | null;
+  baseline_snapshot: PerformanceSnapshot | null;
+}
+
 // ============ Utility ============
 
 export function isTauri(): boolean {
@@ -246,4 +300,28 @@ export async function getRecentResults(): Promise<TestResult[]> {
     throw new Error(result.error || 'Failed to get recent results');
   }
   return result.data;
+}
+
+// ============ GPS Optimization Commands ============
+
+export async function startOptimize(): Promise<void> {
+  const result = await invoke<CommandResult<boolean>>('start_optimize');
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to start optimization');
+  }
+}
+
+export async function getOptimizeStatus(): Promise<OptimizeStatus> {
+  const result = await invoke<CommandResult<OptimizeStatus>>('get_optimize_status');
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Failed to get optimization status');
+  }
+  return result.data;
+}
+
+export async function abortOptimize(): Promise<void> {
+  const result = await invoke<CommandResult<boolean>>('abort_optimize');
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to abort optimization');
+  }
 }

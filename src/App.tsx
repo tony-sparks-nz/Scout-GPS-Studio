@@ -12,6 +12,7 @@ import { LiveDashboard } from './components/LiveDashboard';
 import { NmeaTraffic } from './components/NmeaTraffic';
 import { MapPanel } from './components/MapPanel';
 import { HardwareInfo } from './components/HardwareInfo';
+import { OptimizePanel } from './components/OptimizePanel';
 import './App.css';
 
 function App() {
@@ -69,6 +70,10 @@ function App() {
           </div>
           <MapPanel gpsData={gpsData} />
           <div className="col-right">
+            <OptimizePanel
+              status={gpsStatus}
+              isUblox={connectedPort?.vid === 0x1546}
+            />
             <HardwareInfo
               gpsData={gpsData}
               connectedPort={connectedPort}

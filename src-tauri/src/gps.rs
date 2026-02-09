@@ -2,119 +2,16 @@
 // Simplified from VortexNav: single-source, auto-detect, no failover/TCP/simulated
 
 use crate::nmea::{GpsData, NmeaParser};
+use crate::ubx_config;
+use crate::ubx_optimizer::UbxOptimizer;
 use serde::{Deserialize, Serialize};
 use serialport::SerialPortType;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read as _, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use std::time::Duration;
 use thiserror::Error;
-
-// ============ UBX Protocol Support for u-blox Configuration ============
-
-/// Calculate UBX checksum (Fletcher's algorithm)
-fn ubx_checksum(data: &[u8]) -> (u8, u8) {
-    let mut ck_a: u8 = 0;
-    let mut ck_b: u8 = 0;
-    for byte in data {
-        ck_a = ck_a.wrapping_add(*byte);
-        ck_b = ck_b.wrapping_add(ck_a);
-    }
-    (ck_a, ck_b)
-}
-
-/// Build a complete UBX message with sync chars and checksum
-fn build_ubx_message(class: u8, id: u8, payload: &[u8]) -> Vec<u8> {
-    let len = payload.len() as u16;
-    let mut msg = Vec::with_capacity(8 + payload.len());
-    msg.push(0xB5);
-    msg.push(0x62);
-    msg.push(class);
-    msg.push(id);
-    msg.push((len & 0xFF) as u8);
-    msg.push((len >> 8) as u8);
-    msg.extend_from_slice(payload);
-    let checksum_data = &msg[2..];
-    let (ck_a, ck_b) = ubx_checksum(checksum_data);
-    msg.push(ck_a);
-    msg.push(ck_b);
-    msg
-}
-
-/// Build UBX-CFG-GNSS message to enable GPS + GLONASS + SBAS
-fn build_ubx_cfg_gnss_multi_constellation() -> Vec<u8> {
-    let mut payload = Vec::new();
-    // Header
-    payload.push(0x00); // msgVer
-    payload.push(0x00); // numTrkChHw
-    payload.push(0xFF); // numTrkChUse: all available
-    payload.push(0x03); // numConfigBlocks: GPS + SBAS + GLONASS
-
-    // GPS (gnssId = 0)
-    payload.extend_from_slice(&[0x00, 0x04, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00]);
-    // SBAS (gnssId = 1)
-    payload.extend_from_slice(&[0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00]);
-    // GLONASS (gnssId = 6)
-    payload.extend_from_slice(&[0x06, 0x04, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00]);
-
-    build_ubx_message(0x06, 0x3E, &payload)
-}
-
-/// Build UBX-CFG-MSG to enable GLONASS GSV sentences
-fn build_ubx_cfg_msg_glgsv_enable() -> Vec<u8> {
-    let payload = vec![0xF0, 0x03, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00];
-    build_ubx_message(0x06, 0x01, &payload)
-}
-
-/// Build UBX-CFG-NMEA for extended talker IDs
-fn build_ubx_cfg_nmea_extended() -> Vec<u8> {
-    let payload = vec![0x00, 0x23, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01];
-    build_ubx_message(0x06, 0x17, &payload)
-}
-
-/// Configure a u-blox GPS receiver for multi-constellation operation
-fn configure_ublox_multi_constellation(port: &mut Box<dyn serialport::SerialPort>) -> Result<(), std::io::Error> {
-    log::info!("Configuring GPS receiver for multi-constellation (GPS + GLONASS)...");
-    thread::sleep(Duration::from_millis(100));
-
-    // Enable GPS + GLONASS constellations
-    let gnss_cmd = build_ubx_cfg_gnss_multi_constellation();
-    port.write_all(&gnss_cmd)?;
-    port.flush()?;
-    thread::sleep(Duration::from_millis(250));
-
-    // Enable extended NMEA with proper talker IDs
-    let nmea_cmd = build_ubx_cfg_nmea_extended();
-    port.write_all(&nmea_cmd)?;
-    port.flush()?;
-    thread::sleep(Duration::from_millis(250));
-
-    // Enable GLONASS GSV sentences
-    let glgsv_cmd = build_ubx_cfg_msg_glgsv_enable();
-    port.write_all(&glgsv_cmd)?;
-    port.flush()?;
-    thread::sleep(Duration::from_millis(250));
-
-    // Drain any binary UBX response data
-    let mut drain_buf = [0u8; 512];
-    let original_timeout = port.timeout();
-    port.set_timeout(Duration::from_millis(100))?;
-
-    loop {
-        match port.read(&mut drain_buf) {
-            Ok(0) => break,
-            Ok(_) => continue,
-            Err(e) if e.kind() == std::io::ErrorKind::TimedOut => break,
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
-            Err(_) => break,
-        }
-    }
-
-    port.set_timeout(original_timeout)?;
-    log::info!("GPS multi-constellation configuration complete");
-    Ok(())
-}
 
 // ============ GPS Types ============
 
@@ -177,6 +74,45 @@ impl Default for GpsSourceStatus {
 // NMEA sentence buffer size
 const NMEA_BUFFER_SIZE: usize = 100;
 
+// ============ Initial UBX Configuration (on connect) ============
+
+/// Configure a u-blox GPS receiver for multi-constellation on connect
+fn configure_ublox_multi_constellation(port: &mut Box<dyn serialport::SerialPort>) -> Result<(), std::io::Error> {
+    log::info!("Configuring GPS receiver for multi-constellation (GPS + GLONASS)...");
+    thread::sleep(Duration::from_millis(100));
+
+    // Build initial setup commands using ubx_config
+    let commands = vec![
+        ubx_config::build_cfg_gnss_series8_marine(),  // Multi-constellation (safe default)
+        ubx_config::build_cfg_nmea_extended(),         // Extended talker IDs
+    ];
+
+    for cmd in &commands {
+        port.write_all(cmd)?;
+        port.flush()?;
+        thread::sleep(Duration::from_millis(250));
+    }
+
+    // Drain any binary UBX response data
+    let mut drain_buf = [0u8; 512];
+    let original_timeout = port.timeout();
+    port.set_timeout(Duration::from_millis(100))?;
+
+    loop {
+        match port.read(&mut drain_buf) {
+            Ok(0) => break,
+            Ok(_) => continue,
+            Err(e) if e.kind() == std::io::ErrorKind::TimedOut => break,
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => break,
+            Err(_) => break,
+        }
+    }
+
+    port.set_timeout(original_timeout)?;
+    log::info!("GPS multi-constellation configuration complete");
+    Ok(())
+}
+
 // ============ GPS Manager ============
 
 pub struct GpsManager {
@@ -185,6 +121,10 @@ pub struct GpsManager {
     stop_flag: Arc<AtomicBool>,
     reader_handle: std::sync::Mutex<Option<thread::JoinHandle<()>>>,
     nmea_buffer: Arc<RwLock<Vec<String>>>,
+    /// Cloned serial port handle for writing UBX commands
+    pub write_port: Arc<Mutex<Option<Box<dyn serialport::SerialPort + Send>>>>,
+    /// Optimization engine
+    pub optimizer: Arc<RwLock<UbxOptimizer>>,
 }
 
 impl GpsManager {
@@ -195,6 +135,8 @@ impl GpsManager {
             stop_flag: Arc::new(AtomicBool::new(false)),
             reader_handle: std::sync::Mutex::new(None),
             nmea_buffer: Arc::new(RwLock::new(Vec::with_capacity(NMEA_BUFFER_SIZE))),
+            write_port: Arc::new(Mutex::new(None)),
+            optimizer: Arc::new(RwLock::new(UbxOptimizer::new())),
         }
     }
 
@@ -206,6 +148,32 @@ impl GpsManager {
     /// Clear the NMEA buffer
     pub fn clear_nmea_buffer(&self) {
         self.nmea_buffer.write().unwrap().clear();
+    }
+
+    /// Send all pending UBX commands from the optimizer via the write port
+    pub fn send_pending_commands(&self) {
+        let commands: Vec<Vec<u8>> = {
+            let mut opt = self.optimizer.write().unwrap();
+            opt.pending_commands.drain(..).collect()
+        };
+
+        if commands.is_empty() {
+            return;
+        }
+
+        let mut port_guard = self.write_port.lock().unwrap();
+        if let Some(ref mut port) = *port_guard {
+            for cmd in &commands {
+                if let Err(e) = port.write_all(cmd) {
+                    log::warn!("Failed to send UBX command: {}", e);
+                    break;
+                }
+                let _ = port.flush();
+                thread::sleep(Duration::from_millis(250));
+            }
+        } else {
+            log::warn!("Cannot send UBX commands: no write port available");
+        }
     }
 
     /// Enumerate all available serial ports
@@ -358,6 +326,8 @@ impl GpsManager {
         let data_lock = Arc::clone(&self.data);
         let status_lock = Arc::clone(&self.status);
         let nmea_buffer_lock = Arc::clone(&self.nmea_buffer);
+        let write_port_lock = Arc::clone(&self.write_port);
+        let optimizer_lock = Arc::clone(&self.optimizer);
         let port_name_owned = port_name.to_string();
 
         let handle = thread::spawn(move || {
@@ -366,6 +336,8 @@ impl GpsManager {
                 &data_lock,
                 &status_lock,
                 &nmea_buffer_lock,
+                &write_port_lock,
+                &optimizer_lock,
                 &port_name_owned,
                 baud_rate,
             ) {
@@ -389,6 +361,12 @@ impl GpsManager {
             drop(handle);
         }
 
+        // Clear write port
+        *self.write_port.lock().unwrap() = None;
+
+        // Reset optimizer
+        self.optimizer.write().unwrap().reset();
+
         let mut status = self.status.write().unwrap();
         status.status = GpsConnectionStatus::Disconnected;
     }
@@ -399,6 +377,8 @@ impl GpsManager {
         data_lock: &RwLock<GpsData>,
         status_lock: &RwLock<GpsSourceStatus>,
         nmea_buffer_lock: &RwLock<Vec<String>>,
+        write_port_lock: &Arc<Mutex<Option<Box<dyn serialport::SerialPort + Send>>>>,
+        optimizer_lock: &Arc<RwLock<UbxOptimizer>>,
         port_name: &str,
         baud_rate: u32,
     ) -> Result<(), GpsError> {
@@ -411,6 +391,16 @@ impl GpsManager {
             let mut status = status_lock.write().unwrap();
             status.status = GpsConnectionStatus::Connected;
             status.last_error = None;
+        }
+
+        // Clone port for writing before wrapping in BufReader
+        match port.try_clone() {
+            Ok(write_clone) => {
+                *write_port_lock.lock().unwrap() = Some(write_clone);
+            }
+            Err(e) => {
+                log::warn!("Failed to clone serial port for writing (non-fatal): {}", e);
+            }
         }
 
         // Only configure via UBX if this looks like a u-blox receiver
@@ -429,6 +419,9 @@ impl GpsManager {
         let mut sentences_received: u64 = 0;
         let mut consecutive_errors: u32 = 0;
 
+        // UBX binary frame accumulation buffer
+        let mut ubx_buffer: Vec<u8> = Vec::new();
+
         while !stop_flag.load(Ordering::SeqCst) {
             buf.clear();
             match reader.read_until(b'\n', &mut buf) {
@@ -442,6 +435,54 @@ impl GpsManager {
                 }
                 Ok(_) => {
                     consecutive_errors = 0;
+
+                    // Check if optimizer is awaiting a UBX binary response
+                    let awaiting_ubx = optimizer_lock.read().unwrap().awaiting_mon_ver;
+
+                    if awaiting_ubx {
+                        // Scan for UBX sync bytes in the raw buffer
+                        if let Some(sync_pos) = buf
+                            .windows(2)
+                            .position(|w| w[0] == ubx_config::UBX_SYNC_1 && w[1] == ubx_config::UBX_SYNC_2)
+                        {
+                            ubx_buffer.extend_from_slice(&buf[sync_pos..]);
+                        } else if !ubx_buffer.is_empty() {
+                            // Continue accumulating binary data
+                            ubx_buffer.extend_from_slice(&buf);
+                        }
+
+                        // Try to extract a complete UBX frame
+                        if ubx_buffer.len() >= 8 {
+                            let payload_len =
+                                u16::from_le_bytes([ubx_buffer[4], ubx_buffer[5]]) as usize;
+                            let total_len = 6 + payload_len + 2; // header(6) + payload + checksum(2)
+
+                            if ubx_buffer.len() >= total_len {
+                                let class = ubx_buffer[2];
+                                let id = ubx_buffer[3];
+
+                                // MON-VER response: class=0x0A, id=0x04
+                                if class == ubx_config::UBX_CLASS_MON
+                                    && id == ubx_config::UBX_MON_VER
+                                {
+                                    let payload = ubx_buffer[6..6 + payload_len].to_vec();
+                                    optimizer_lock
+                                        .write()
+                                        .unwrap()
+                                        .on_mon_ver_response(&payload);
+                                    log::info!(
+                                        "UBX-MON-VER response received ({} bytes payload)",
+                                        payload_len
+                                    );
+                                }
+                                ubx_buffer.clear();
+                            }
+                        }
+                    } else {
+                        ubx_buffer.clear();
+                    }
+
+                    // Process NMEA text data
                     let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
                     if trimmed.starts_with('$') {
@@ -535,7 +576,7 @@ fn is_likely_gps_device(manufacturer: &Option<String>, product: &Option<String>)
 }
 
 /// Check if a connected device is a u-blox receiver (safe to send UBX commands)
-fn is_ublox_device(port_name: &str) -> bool {
+pub fn is_ublox_device(port_name: &str) -> bool {
     if let Ok(ports) = serialport::available_ports() {
         for port in &ports {
             if port.port_name == port_name {
