@@ -2,40 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   getGpsData,
   getGpsStatus,
-  getTestStatus,
-  getTestCriteria,
-  disconnectGps,
   isTauri,
   type GpsData,
   type GpsSourceStatus,
-  type TestResult,
-  type TestCriteria,
+  type DetectedPort,
 } from './hooks/useTauri';
 import { DeviceDetection } from './components/DeviceDetection';
 import { LiveDashboard } from './components/LiveDashboard';
-import { TestRunner } from './components/TestRunner';
 import { NmeaTraffic } from './components/NmeaTraffic';
-import { TestHistory } from './components/TestHistory';
-import { ConfigPanel } from './components/ConfigPanel';
+import { MapPanel } from './components/MapPanel';
+import { HardwareInfo } from './components/HardwareInfo';
 import './App.css';
 
 function App() {
   const [gpsData, setGpsData] = useState<GpsData | null>(null);
   const [gpsStatus, setGpsStatus] = useState<GpsSourceStatus | null>(null);
-  const [testResult, setTestResult] = useState<TestResult | null>(null);
-  const [criteria, setCriteria] = useState<TestCriteria | null>(null);
-  const [testHistory, setTestHistory] = useState<TestResult[]>([]);
-  const [showNmea, setShowNmea] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
-  const [connected, setConnected] = useState(false);
+  const [connectedPort, setConnectedPort] = useState<DetectedPort | null>(null);
+  const [connectedBaud, setConnectedBaud] = useState<number | null>(null);
 
-  // Load criteria on mount
-  useEffect(() => {
-    if (!isTauri()) return;
-    getTestCriteria().then(setCriteria).catch(console.error);
-  }, []);
-
-  // Polling loop for GPS data and test status
+  // Polling loop for GPS data
   useEffect(() => {
     if (!isTauri()) return;
 
@@ -47,22 +32,6 @@ function App() {
         ]);
         setGpsData(data);
         setGpsStatus(status);
-
-        const isConnected = status.status === 'receiving_data' || status.status === 'connected';
-        setConnected(isConnected);
-
-        // Poll test status if a test is running
-        if (testResult?.verdict === 'running' || testResult?.verdict === 'not_started') {
-          const result = await getTestStatus();
-          setTestResult(result);
-
-          // If test just finished, add to history
-          if (result.verdict === 'pass' || result.verdict === 'fail' || result.verdict === 'timed_out') {
-            if (testResult?.verdict === 'running') {
-              setTestHistory(prev => [...prev, result]);
-            }
-          }
-        }
       } catch (error) {
         console.debug('Poll error:', error);
       }
@@ -71,27 +40,11 @@ function App() {
     poll();
     const interval = setInterval(poll, 500);
     return () => clearInterval(interval);
-  }, [testResult?.verdict]);
-
-  const handleConnected = useCallback(() => {
-    setConnected(true);
   }, []);
 
-  const handleReset = useCallback(async () => {
-    // Disconnect, reset state, trigger re-detect
-    try {
-      await disconnectGps();
-    } catch {
-      // ignore
-    }
-    setGpsData(null);
-    setGpsStatus(null);
-    setTestResult(null);
-    setConnected(false);
-  }, []);
-
-  const handleCriteriaChanged = useCallback((c: TestCriteria) => {
-    setCriteria(c);
+  const handleConnected = useCallback((port: DetectedPort, baud: number) => {
+    setConnectedPort(port);
+    setConnectedBaud(baud);
   }, []);
 
   return (
@@ -99,41 +52,33 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          <h1>Scout GPS Test</h1>
-          <span className="version">v1.0.0</span>
-        </div>
-        <div className="header-right">
-          <button
-            className={`btn btn-small ${showNmea ? 'btn-active' : ''}`}
-            onClick={() => setShowNmea(!showNmea)}
-          >
-            NMEA
-          </button>
-          <button className="btn btn-small" onClick={() => setShowConfig(true)}>
-            Config
-          </button>
+          <h1>Vortex Marine Limited - GPS Studio</h1>
+          <span className="version">v3.42</span>
+          <span className="copyright">&copy; 2025 Vortex Marine Limited. All rights reserved. Licensed software — unauthorized copying or distribution is strictly prohibited.</span>
         </div>
       </header>
 
-      {/* Main content - 3 zone layout */}
+      {/* Connection bar */}
+      <DeviceDetection status={gpsStatus} onConnected={handleConnected} />
+
+      {/* Main content: 3-column layout */}
       <main className="app-main">
-        <div className="zones">
-          <DeviceDetection status={gpsStatus} onConnected={handleConnected} />
-          <LiveDashboard gpsData={gpsData} criteria={criteria} />
-          <TestRunner testResult={testResult} status={gpsStatus} onReset={handleReset} />
+        <div className="main-content">
+          <div className="col-left">
+            <LiveDashboard gpsData={gpsData} criteria={null} />
+          </div>
+          <MapPanel gpsData={gpsData} />
+          <div className="col-right">
+            <HardwareInfo
+              gpsData={gpsData}
+              connectedPort={connectedPort}
+              connectedBaud={connectedBaud}
+              status={gpsStatus}
+            />
+          </div>
         </div>
-
-        {/* Collapsible sections */}
-        <NmeaTraffic visible={showNmea} />
-        <TestHistory results={testHistory} />
+        <NmeaTraffic visible={true} />
       </main>
-
-      {/* Config modal */}
-      <ConfigPanel
-        visible={showConfig}
-        onClose={() => setShowConfig(false)}
-        onCriteriaChanged={handleCriteriaChanged}
-      />
     </div>
   );
 }

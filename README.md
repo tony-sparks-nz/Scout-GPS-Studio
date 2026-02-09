@@ -1,6 +1,6 @@
-# Scout GPS Test
+# Vortex Marine Limited - GPS Studio
 
-Factory GPS hardware verification tool for Scout Tablets. Tests GPS receiver performance against configurable specifications and generates pass/fail reports.
+GPS hardware verification and analysis tool. Tests GPS receiver performance against configurable specifications and generates pass/fail reports.
 
 ## Features
 
@@ -9,7 +9,9 @@ Factory GPS hardware verification tool for Scout Tablets. Tests GPS receiver per
 - **Pass/fail testing**: Configurable criteria with stability verification
 - **u-blox optimization**: Automatic multi-constellation configuration (GPS + GLONASS + SBAS) for u-blox receivers
 - **Generic support**: Works with any NMEA 0183 GPS receiver
-- **Factory reports**: JSON test reports saved per device for traceability
+- **Hardware debug**: Full USB device identity, signal statistics, per-constellation breakdown
+- **Map view**: GPS fix location with multiple basemaps (Dark, Light, Voyager, Satellite)
+- **Reports**: JSON test reports saved per device for traceability
 
 ## Test Criteria (Defaults)
 
@@ -24,7 +26,7 @@ Factory GPS hardware verification tool for Scout Tablets. Tests GPS receiver per
 | Min constellations | 2 |
 | Stability duration | 10s |
 
-Criteria are configurable via the Config button or by editing `~/.config/scout-gps-test/criteria.json`.
+Criteria are configurable via the Config button or by editing `~/.config/gps-studio/criteria.json`.
 
 ## Building
 
@@ -45,13 +47,13 @@ npm install
 cargo tauri build
 ```
 
-Output: `src-tauri/target/release/bundle/deb/scout-gps-test_1.0.0_amd64.deb`
+Output: `src-tauri/target/release/bundle/deb/gps-studio_3.43.0_amd64.deb`
 
-## Installation (Factory)
+## Installation
 
 ```bash
 # Install the .deb package
-sudo dpkg -i scout-gps-test_1.0.0_amd64.deb
+sudo dpkg -i gps-studio_3.43.0_amd64.deb
 
 # Grant serial port access (one-time, requires logout/login)
 sudo usermod -a -G dialout $USER
@@ -61,17 +63,17 @@ sudo cp 99-scout-gps.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules
 
 # Create results directory
-mkdir -p ~/scout-gps-results
+mkdir -p ~/gps-studio-results
 
 # Launch
-scout-gps-test
+gps-studio
 ```
 
-## Factory Workflow
+## Workflow
 
-1. Connect tablet to test station
-2. Launch Scout GPS Test (auto-detects GPS hardware)
-3. Verify device identity (manufacturer, serial number)
+1. Connect GPS device
+2. Launch GPS Studio (auto-detects GPS hardware)
+3. Verify device identity (manufacturer, serial number, VID/PID)
 4. Press **START TEST**
 5. Wait for **PASS** or **FAIL** verdict
 6. Press **Save Report** to record results
@@ -79,7 +81,7 @@ scout-gps-test
 
 ## Test Reports
 
-Reports are saved as JSON to `~/scout-gps-results/` with filename format:
+Reports are saved as JSON to `~/gps-studio-results/` with filename format:
 `gps-test_{serial}_{timestamp}.json`
 
 ## Development
@@ -92,6 +94,6 @@ cargo tauri dev
 ## Tech Stack
 
 - **Backend**: Rust + Tauri 2.0
-- **Frontend**: React 19 + TypeScript + Vite
+- **Frontend**: React 19 + TypeScript + Vite + Leaflet
 - **GPS**: serialport crate + nmea crate
 - **Protocol**: NMEA 0183, u-blox UBX (optional)

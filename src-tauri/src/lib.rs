@@ -1,4 +1,4 @@
-// Scout GPS Test - Factory GPS hardware verification tool
+// Vortex Marine Limited - GPS Studio
 
 mod commands;
 mod gps;
@@ -19,7 +19,7 @@ pub fn run() {
     let criteria = load_criteria();
     let results_dir = test_report::default_results_dir();
 
-    log::info!("Scout GPS Test starting...");
+    log::info!("GPS Studio v3.42 starting...");
     log::info!("Results directory: {}", results_dir.display());
 
     let app_state = AppState {
@@ -56,7 +56,7 @@ pub fn run() {
             commands::get_recent_results,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Scout GPS Test");
+        .expect("error while running GPS Studio");
 }
 
 /// Load test criteria from config file, falling back to defaults
@@ -91,5 +91,5 @@ fn dirs_config() -> std::path::PathBuf {
         .unwrap_or_else(|_| ".".to_string());
     std::path::PathBuf::from(home)
         .join(".config")
-        .join("scout-gps-test")
+        .join("gps-studio")
 }

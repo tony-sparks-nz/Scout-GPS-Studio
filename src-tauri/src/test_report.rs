@@ -33,5 +33,5 @@ pub fn default_results_dir() -> PathBuf {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join("scout-gps-results")
+    PathBuf::from(home).join("gps-studio-results")
 }

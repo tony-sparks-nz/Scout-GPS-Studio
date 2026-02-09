@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    scout_gps_test_lib::run()
+    gps_studio_lib::run()
 }

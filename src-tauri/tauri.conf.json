@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Scout GPS Test",
-  "version": "1.0.0",
-  "identifier": "com.vortexnav.scout-gps-test",
+  "productName": "GPS Studio",
+  "version": "3.42.0",
+  "identifier": "com.vortexmarine.gps-studio",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Scout GPS Test",
+        "title": "Vortex Marine Limited - GPS Studio — © 2025 All Rights Reserved — Licensed Software",
         "width": 1200,
         "height": 800,
         "fullscreen": false,

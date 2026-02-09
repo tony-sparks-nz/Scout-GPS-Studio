@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[allow(dead_code)]
 pub enum NmeaError {
     #[error("Parse error: {0}")]
     Parse(String),
@@ -50,6 +51,7 @@ pub struct NmeaParser {
     nmea: Mutex<Nmea>,
 }
 
+#[allow(dead_code)]
 impl NmeaParser {
     pub fn new() -> Self {
         Self {

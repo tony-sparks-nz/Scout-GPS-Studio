@@ -1,4 +1,4 @@
-// Tauri command bindings for Scout GPS Test
+// Tauri command bindings for GPS Studio
 
 import { invoke } from '@tauri-apps/api/core';
 
@@ -50,6 +50,8 @@ export interface DetectedPort {
   manufacturer: string | null;
   product: string | null;
   serial_number: string | null;
+  vid: number | null;
+  pid: number | null;
   is_likely_gps: boolean;
 }
 
@@ -90,6 +92,8 @@ export interface DeviceInfo {
   manufacturer: string | null;
   product: string | null;
   serial_number: string | null;
+  vid: number | null;
+  pid: number | null;
 }
 
 export interface TestResult {

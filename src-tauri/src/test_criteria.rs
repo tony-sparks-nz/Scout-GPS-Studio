@@ -63,6 +63,8 @@ pub struct DeviceInfo {
     pub manufacturer: Option<String>,
     pub product: Option<String>,
     pub serial_number: Option<String>,
+    pub vid: Option<u16>,
+    pub pid: Option<u16>,
 }
 
 /// Complete test result

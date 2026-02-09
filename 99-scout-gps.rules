@@ -1,4 +1,4 @@
-# Scout GPS Test - udev rules for USB serial GPS device access
+# GPS Studio - udev rules for USB serial GPS device access
 # Install to /etc/udev/rules.d/ then run: sudo udevadm control --reload-rules
 
 # u-blox GPS receivers

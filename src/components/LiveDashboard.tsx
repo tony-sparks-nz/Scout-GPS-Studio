@@ -56,7 +56,7 @@ export function LiveDashboard({ gpsData, criteria }: LiveDashboardProps) {
 
   return (
     <section className="panel live-dashboard">
-      <h2>2. Live GPS Data</h2>
+      <h2>Live GPS Data</h2>
 
       {/* Summary metrics */}
       <div className="metrics-grid">

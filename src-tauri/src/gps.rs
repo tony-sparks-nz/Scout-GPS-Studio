@@ -75,8 +75,6 @@ fn build_ubx_cfg_nmea_extended() -> Vec<u8> {
 
 /// Configure a u-blox GPS receiver for multi-constellation operation
 fn configure_ublox_multi_constellation(port: &mut Box<dyn serialport::SerialPort>) -> Result<(), std::io::Error> {
-    use std::io::Read;
-
     log::info!("Configuring GPS receiver for multi-constellation (GPS + GLONASS)...");
     thread::sleep(Duration::from_millis(100));
 
@@ -138,6 +136,8 @@ pub struct DetectedPort {
     pub manufacturer: Option<String>,
     pub product: Option<String>,
     pub serial_number: Option<String>,
+    pub vid: Option<u16>,
+    pub pid: Option<u16>,
     pub is_likely_gps: bool,
 }
 
@@ -215,7 +215,7 @@ impl GpsManager {
         let detected: Vec<DetectedPort> = ports
             .into_iter()
             .map(|port| {
-                let (port_type, manufacturer, product, serial_number, is_likely_gps) =
+                let (port_type, manufacturer, product, serial_number, vid, pid, is_likely_gps) =
                     match &port.port_type {
                         SerialPortType::UsbPort(info) => {
                             let mfr = info.manufacturer.clone();
@@ -226,15 +226,17 @@ impl GpsManager {
                                 mfr,
                                 prod,
                                 info.serial_number.clone(),
+                                Some(info.vid),
+                                Some(info.pid),
                                 likely_gps,
                             )
                         }
                         SerialPortType::BluetoothPort => {
-                            ("Bluetooth".to_string(), None, None, None, false)
+                            ("Bluetooth".to_string(), None, None, None, None, None, false)
                         }
-                        SerialPortType::PciPort => ("PCI".to_string(), None, None, None, false),
+                        SerialPortType::PciPort => ("PCI".to_string(), None, None, None, None, None, false),
                         SerialPortType::Unknown => {
-                            ("Unknown".to_string(), None, None, None, false)
+                            ("Unknown".to_string(), None, None, None, None, None, false)
                         }
                     };
 
@@ -244,6 +246,8 @@ impl GpsManager {
                     manufacturer,
                     product,
                     serial_number,
+                    vid,
+                    pid,
                     is_likely_gps,
                 }
             })
@@ -259,14 +263,15 @@ impl GpsManager {
             .open()?;
 
         let mut reader = BufReader::new(port);
-        let mut line = String::new();
+        let mut buf = Vec::with_capacity(256);
         let mut nmea_count = 0;
 
         for _ in 0..10 {
-            line.clear();
-            match reader.read_line(&mut line) {
+            buf.clear();
+            match reader.read_until(b'\n', &mut buf) {
                 Ok(0) => break,
                 Ok(_) => {
+                    let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
                     if trimmed.starts_with('$')
                         && (trimmed.contains("GP")
@@ -420,14 +425,24 @@ impl GpsManager {
 
         let parser = NmeaParser::new();
         let mut reader = BufReader::new(port);
-        let mut line = String::new();
+        let mut buf = Vec::with_capacity(512);
         let mut sentences_received: u64 = 0;
+        let mut consecutive_errors: u32 = 0;
 
         while !stop_flag.load(Ordering::SeqCst) {
-            line.clear();
-            match reader.read_line(&mut line) {
-                Ok(0) => break,
+            buf.clear();
+            match reader.read_until(b'\n', &mut buf) {
+                Ok(0) => {
+                    // EOF — device likely disconnected
+                    log::warn!("GPS serial port returned EOF (device disconnected?)");
+                    let mut status = status_lock.write().unwrap();
+                    status.status = GpsConnectionStatus::Disconnected;
+                    status.last_error = Some("Device disconnected".to_string());
+                    break;
+                }
                 Ok(_) => {
+                    consecutive_errors = 0;
+                    let line = String::from_utf8_lossy(&buf);
                     let trimmed = line.trim();
                     if trimmed.starts_with('$') {
                         sentences_received += 1;
@@ -472,9 +487,20 @@ impl GpsManager {
                     }
                 }
                 Err(e) => {
-                    if e.kind() != std::io::ErrorKind::TimedOut {
-                        return Err(GpsError::Io(e));
+                    if e.kind() == std::io::ErrorKind::TimedOut || e.kind() == std::io::ErrorKind::WouldBlock {
+                        continue;
                     }
+                    // Device disconnected or other fatal error
+                    consecutive_errors += 1;
+                    log::warn!("GPS serial read error ({}): {}", consecutive_errors, e);
+                    if consecutive_errors >= 3 {
+                        log::error!("GPS device disconnected (too many errors)");
+                        let mut status = status_lock.write().unwrap();
+                        status.status = GpsConnectionStatus::Disconnected;
+                        status.last_error = Some(format!("Device disconnected: {}", e));
+                        break;
+                    }
+                    thread::sleep(Duration::from_millis(100));
                 }
             }
         }

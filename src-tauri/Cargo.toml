@@ -1,13 +1,13 @@
 [package]
-name = "scout-gps-test"
-version = "1.0.0"
-description = "Factory GPS hardware test tool for Scout Tablets"
-authors = ["Vortex Navigation"]
+name = "gps-studio"
+version = "3.42.0"
+description = "GPS hardware verification and analysis tool"
+authors = ["Vortex Marine Limited"]
 edition = "2021"
-default-run = "scout-gps-test"
+default-run = "gps-studio"
 
 [lib]
-name = "scout_gps_test_lib"
+name = "gps_studio_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

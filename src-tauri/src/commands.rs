@@ -2,7 +2,7 @@
 
 use crate::gps::{DetectedPort, GpsManager, GpsSourceStatus};
 use crate::nmea::GpsData;
-use crate::test_criteria::{CriterionResult, DeviceInfo, TestCriteria, TestResult, TestRunner, TestVerdict};
+use crate::test_criteria::{DeviceInfo, TestCriteria, TestResult, TestRunner, TestVerdict};
 use crate::test_report;
 use serde::Serialize;
 use std::sync::RwLock;
@@ -38,7 +38,7 @@ pub struct AppState {
 // ============ GPS Commands ============
 
 #[tauri::command]
-pub fn list_serial_ports() -> CommandResult<Vec<DetectedPort>> {
+pub async fn list_serial_ports() -> CommandResult<Vec<DetectedPort>> {
     match GpsManager::list_serial_ports() {
         Ok(ports) => CommandResult::ok(ports),
         Err(e) => CommandResult::err(e.to_string()),
@@ -46,7 +46,7 @@ pub fn list_serial_ports() -> CommandResult<Vec<DetectedPort>> {
 }
 
 #[tauri::command]
-pub fn auto_detect_gps() -> CommandResult<(DetectedPort, u32)> {
+pub async fn auto_detect_gps() -> CommandResult<(DetectedPort, u32)> {
     match GpsManager::auto_detect_gps() {
         Ok(result) => CommandResult::ok(result),
         Err(e) => CommandResult::err(e.to_string()),
@@ -54,7 +54,7 @@ pub fn auto_detect_gps() -> CommandResult<(DetectedPort, u32)> {
 }
 
 #[tauri::command]
-pub fn test_gps_port(port_name: String, baud_rate: u32) -> CommandResult<bool> {
+pub async fn test_gps_port(port_name: String, baud_rate: u32) -> CommandResult<bool> {
     match GpsManager::test_port(&port_name, baud_rate, 3000) {
         Ok(result) => CommandResult::ok(result),
         Err(e) => CommandResult::err(e.to_string()),
@@ -139,6 +139,8 @@ pub fn start_test(state: State<'_, AppState>) -> CommandResult<bool> {
                     manufacturer: port.manufacturer.clone(),
                     product: port.product.clone(),
                     serial_number: port.serial_number.clone(),
+                    vid: port.vid,
+                    pid: port.pid,
                 }
             } else {
                 DeviceInfo {
@@ -147,6 +149,8 @@ pub fn start_test(state: State<'_, AppState>) -> CommandResult<bool> {
                     manufacturer: None,
                     product: None,
                     serial_number: None,
+                    vid: None,
+                    pid: None,
                 }
             }
         }
@@ -156,6 +160,8 @@ pub fn start_test(state: State<'_, AppState>) -> CommandResult<bool> {
             manufacturer: None,
             product: None,
             serial_number: None,
+            vid: None,
+            pid: None,
         },
     };
 
@@ -196,6 +202,8 @@ pub fn get_test_status(state: State<'_, AppState>) -> CommandResult<TestResult> 
                     manufacturer: None,
                     product: None,
                     serial_number: None,
+                    vid: None,
+                    pid: None,
                 },
                 timestamp: chrono::Utc::now().to_rfc3339(),
                 best_gps_data: None,
